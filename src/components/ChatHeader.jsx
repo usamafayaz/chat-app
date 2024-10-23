@@ -14,9 +14,6 @@ const ChatHeader = () => {
   return (
     <View
       style={[styles.header, {backgroundColor: colors.secondaryBackground}]}>
-      <TouchableOpacity style={styles.iconLeft}>
-        <Icon name="menu" size={30} color={colors.iconInactive} />
-      </TouchableOpacity>
       <Text
         allowFontScaling={false}
         style={[styles.headerText, {color: colors.primaryText}]}>
@@ -48,10 +45,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: constants.fontFamilies.bold,
     fontStyle: 'italic',
-  },
-  iconLeft: {
-    position: 'absolute',
-    left: 15,
   },
   iconRight: {
     position: 'absolute',

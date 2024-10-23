@@ -29,7 +29,7 @@ const SignupScreen = ({navigation}) => {
     }));
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (
       !formData.name ||
       !formData.email ||
@@ -45,8 +45,7 @@ const SignupScreen = ({navigation}) => {
       return;
     }
 
-    // TODO: Implement sign up logic
-    console.log('Sign up with:', formData);
+    // TODO: Implement signup logic
   };
 
   return (

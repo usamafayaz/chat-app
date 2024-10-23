@@ -28,11 +28,8 @@ const ThemedApp = () => {
         <Stack.Navigator
           initialRouteName="Login"
           screenOptions={{headerShown: false}}>
-          {/* Login and Signup Pages */}
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Signup" component={SignupScreen} />
-
-          {/* Chat screen, available after login/signup */}
           <Stack.Screen name="Chat" component={ChatScreen} />
         </Stack.Navigator>
       </NavigationContainer>

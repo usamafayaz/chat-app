@@ -1,5 +1,5 @@
 import {Dimensions} from 'react-native';
-import store from '../redux/store'; // Import the Redux store
+import store from '../redux/store';
 const {width, height} = Dimensions.get('window');
 
 // Define colors for light and dark themes
@@ -10,14 +10,14 @@ const lightColors = {
   primaryText: '#333333',
   secondaryText: '#666666',
   placeholderText: '#999999',
+  messageBubbleUser: '#4A90E2',
+  messageBubbleAI: '#F0F0F0',
   primary: '#4A90E2',
   secondary: '#34C759',
   accent: '#5856D6',
   iconActive: '#4A90E2',
   iconInactive: '#666666',
   headerBackground: '#FFFFFF',
-  messageBubbleUser: '#4A90E2',
-  messageBubbleAI: '#F0F0F0',
   border: '#E0E0E0',
   codeBlockBackground: '#F5F5F5',
   loadingText: '#666666',
@@ -30,16 +30,16 @@ const darkColors = {
   primaryText: '#FFFFFF',
   secondaryText: '#CCCCCC',
   placeholderText: '#999999',
-  primary: '#4A90E2',
-  secondary: '#32D74B',
-  accent: '#5E5CE6',
-  iconActive: '#4A90E2',
-  iconInactive: '#666666',
-  headerBackground: '#2A2A2A',
   messageBubbleUser: '#4A90E2',
   messageBubbleAI: '#2A2A2A',
-  codeBlockBackground: '#1E1E1E',
-  loadingText: '#FFFFFF',
+  primary: '#4A90E2',
+  secondary: '#32D74B', //
+  accent: '#5E5CE6', //
+  iconActive: '#4A90E2', //
+  iconInactive: '#666666',
+  headerBackground: '#2A2A2A', //
+  codeBlockBackground: '#1E1E1E', //
+  loadingText: '#FFFFFF', //
 };
 
 const fontSizes = {
@@ -58,7 +58,7 @@ const fontFamilies = {
 const screen = {width, height};
 
 // Export a function that returns the current theme colors
-export const getThemeColors = (theme = 'dark') => {
+export const getThemeColors = (theme = 'light') => {
   return theme === 'dark' ? darkColors : lightColors;
 };
 
