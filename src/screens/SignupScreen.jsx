@@ -1,61 +1,147 @@
-import React, {useState} from 'react';
+// SignupScreen.js
+import React, {useState, useCallback, useMemo} from 'react';
 import {
-  View,
   Text,
   TouchableOpacity,
   SafeAreaView,
   StyleSheet,
   ScrollView,
+  ToastAndroid,
+  ActivityIndicator,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import {constants, getThemeColors} from '../config/constants';
 import InputField from '../components/InputField';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
 
 const SignupScreen = ({navigation}) => {
+  const currentTheme = useSelector(state => state.theme.theme);
+  const colors = getThemeColors(currentTheme);
+
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
 
-  const currentTheme = useSelector(state => state.theme.theme);
-  const colors = getThemeColors(currentTheme);
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prevState => ({
-      ...prevState,
+  // Memoize Firebase queries
+  const usersRef = useMemo(() => firestore().collection('users'), []);
+
+  // Memoize availability check functions
+  const checkAvailability = useCallback(
+    async (field, value) => {
+      try {
+        const snapshot = await usersRef.where(field, '==', value.trim()).get();
+        return snapshot.empty;
+      } catch (error) {
+        console.error(`Error checking ${field} availability:`, error);
+        return false;
+      }
+    },
+    [usersRef],
+  );
+
+  const validateUsername = useCallback(
+    async username => {
+      if (!username) return;
+      const isAvailable = await checkAvailability('username', username);
+      setErrors(prev => ({
+        ...prev,
+        username: isAvailable ? '' : 'Username is already taken',
+      }));
+      return isAvailable;
+    },
+    [checkAvailability],
+  );
+
+  const handleInputChange = useCallback((field, value) => {
+    setFormData(prev => ({
+      ...prev,
       [field]: value,
     }));
-  };
+    // Clear error when user starts typing
+    setErrors(prev => ({
+      ...prev,
+      [field]: '',
+    }));
+  }, []);
+
+  const validateForm = useCallback(() => {
+    const newErrors = {};
+
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.username) newErrors.username = 'Username is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.password) newErrors.password = 'Password is required';
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData]);
 
   const handleSignUp = async () => {
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      alert('Please fill in all fields');
-      return;
-    }
+    if (!validateForm() || isLoading) return;
 
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
+    setIsLoading(true);
+    try {
+      // Check email and username availability in parallel
+      const [isEmailAvailable, isUsernameAvailable] = await Promise.all([
+        checkAvailability('email', formData.email),
+        checkAvailability('username', formData.username),
+      ]);
 
-    // TODO: Implement signup logic
+      if (!isEmailAvailable) {
+        setErrors(prev => ({...prev, email: 'Email is already registered'}));
+        return;
+      }
+
+      if (!isUsernameAvailable) {
+        setErrors(prev => ({...prev, username: 'Username is already taken'}));
+        return;
+      }
+
+      const result = await auth().createUserWithEmailAndPassword(
+        formData.email,
+        formData.password,
+      );
+
+      await usersRef.doc(result.user.uid).set({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        username: formData.username.trim(),
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
+
+      ToastAndroid.show('Account created successfully!', ToastAndroid.SHORT);
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error('Signup error:', error);
+      ToastAndroid.show('Failed to create account', ToastAndroid.SHORT);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <SafeAreaView
       style={[styles.container, {backgroundColor: colors.secondaryBackground}]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, {color: colors.primary}]}>
+        <Text
+          style={[styles.title, {color: colors.primary}]}
+          allowFontScaling={false}>
           Create Account
         </Text>
-        <Text style={[styles.subtitle, {color: colors.secondaryText}]}>
+        <Text
+          style={[styles.subtitle, {color: colors.secondaryText}]}
+          allowFontScaling={false}>
           Sign up to get started
         </Text>
 
@@ -65,6 +151,18 @@ const SignupScreen = ({navigation}) => {
           value={formData.name}
           onChangeText={text => handleInputChange('name', text)}
           placeholder="Enter your name"
+          error={errors.name}
+        />
+
+        <InputField
+          label="Username"
+          iconName="badge"
+          value={formData.username}
+          onChangeText={text => handleInputChange('username', text)}
+          placeholder="Enter your username"
+          isUsername
+          onUsernameValidation={validateUsername}
+          error={errors.username}
         />
 
         <InputField
@@ -74,6 +172,7 @@ const SignupScreen = ({navigation}) => {
           onChangeText={text => handleInputChange('email', text)}
           placeholder="Enter your email"
           keyboardType="email-address"
+          error={errors.email}
         />
 
         <InputField
@@ -83,6 +182,7 @@ const SignupScreen = ({navigation}) => {
           onChangeText={text => handleInputChange('password', text)}
           placeholder="Enter your password"
           secureTextEntry
+          error={errors.password}
         />
 
         <InputField
@@ -92,21 +192,37 @@ const SignupScreen = ({navigation}) => {
           onChangeText={text => handleInputChange('confirmPassword', text)}
           placeholder="Confirm your password"
           secureTextEntry
+          error={errors.confirmPassword}
         />
 
         <TouchableOpacity
-          style={[styles.button, {backgroundColor: colors.primary}]}
-          onPress={handleSignUp}>
-          <Text style={[styles.buttonText, {color: colors.primaryBackground}]}>
-            Sign Up
-          </Text>
+          style={[
+            styles.button,
+            {backgroundColor: colors.primary},
+            isLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleSignUp}
+          disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color={colors.primaryBackground} />
+          ) : (
+            <Text
+              style={[styles.buttonText, {color: colors.primaryBackground}]}
+              allowFontScaling={false}>
+              Sign Up
+            </Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={[styles.footerText, {color: colors.secondaryText}]}>
+          <Text
+            style={[styles.footerText, {color: colors.secondaryText}]}
+            allowFontScaling={false}>
             Already have an account?{' '}
-            <Text style={[styles.footerLink, {color: colors.primary}]}>
-              Login
+            <Text
+              style={[styles.footerLink, {color: colors.primary}]}
+              allowFontScaling={false}>
+              Sign in
             </Text>
           </Text>
         </TouchableOpacity>
@@ -154,6 +270,9 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontFamily: constants.fontFamilies.bold,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });
 

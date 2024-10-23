@@ -27,10 +27,14 @@ const LoginScreen = ({navigation}) => {
     <SafeAreaView
       style={[styles.container, {backgroundColor: colors.secondaryBackground}]}>
       <View style={styles.content}>
-        <Text style={[styles.title, {color: colors.primary}]}>
+        <Text
+          style={[styles.title, {color: colors.primary}]}
+          allowFontScaling={false}>
           Welcome Back
         </Text>
-        <Text style={[styles.subtitle, {color: colors.secondaryText}]}>
+        <Text
+          style={[styles.subtitle, {color: colors.secondaryText}]}
+          allowFontScaling={false}>
           Log in to your account
         </Text>
 
@@ -55,15 +59,21 @@ const LoginScreen = ({navigation}) => {
         <TouchableOpacity
           style={[styles.button, {backgroundColor: colors.primary}]}
           onPress={handleLogin}>
-          <Text style={[styles.buttonText, {color: colors.primaryBackground}]}>
+          <Text
+            style={[styles.buttonText, {color: colors.primaryBackground}]}
+            allowFontScaling={false}>
             Log In
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-          <Text style={[styles.footerText, {color: colors.secondaryText}]}>
+          <Text
+            style={[styles.footerText, {color: colors.secondaryText}]}
+            allowFontScaling={false}>
             Don't have an account?{' '}
-            <Text style={[styles.footerLink, {color: colors.primary}]}>
+            <Text
+              style={[styles.footerLink, {color: colors.primary}]}
+              allowFontScaling={false}>
               Register
             </Text>
           </Text>

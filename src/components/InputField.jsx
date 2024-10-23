@@ -1,10 +1,11 @@
-import React, {useState} from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useSelector} from 'react-redux';
@@ -17,13 +18,35 @@ const InputField = ({
   onChangeText,
   placeholder,
   secureTextEntry,
-  keyboardType,
+  keyboardType = 'default',
+  isUsername = false,
+  onUsernameValidation,
+  error,
 }) => {
   const currentTheme = useSelector(state => state.theme.theme);
   const colors = getThemeColors(currentTheme);
   const [showPassword, setShowPassword] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
-  const isPassword = secureTextEntry;
+  const togglePassword = useCallback(() => {
+    setShowPassword(prev => !prev);
+  }, []);
+
+  const handleInputChange = useCallback(
+    text => {
+      onChangeText(text);
+
+      if (isUsername && onUsernameValidation) {
+        setIsChecking(true);
+        const timeoutId = setTimeout(() => {
+          onUsernameValidation(text).finally(() => setIsChecking(false));
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+      }
+    },
+    [isUsername, onUsernameValidation, onChangeText],
+  );
 
   return (
     <View style={styles.inputContainer}>
@@ -32,6 +55,7 @@ const InputField = ({
         style={[
           styles.inputWrapper,
           {backgroundColor: colors.inputBackground},
+          error && styles.inputWrapperError,
         ]}>
         <Icon
           name={iconName}
@@ -44,12 +68,14 @@ const InputField = ({
           placeholder={placeholder}
           placeholderTextColor={colors.placeholderText}
           value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={isPassword && !showPassword}
-          keyboardType={keyboardType || 'default'}
+          onChangeText={handleInputChange}
+          secureTextEntry={secureTextEntry && !showPassword}
+          keyboardType={keyboardType}
+          autoCapitalize={isUsername ? 'none' : 'sentences'}
+          autoCorrect={false}
         />
-        {isPassword && (
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+        {secureTextEntry && (
+          <TouchableOpacity onPress={togglePassword}>
             <Icon
               name={showPassword ? 'visibility' : 'visibility-off'}
               size={24}
@@ -57,7 +83,19 @@ const InputField = ({
             />
           </TouchableOpacity>
         )}
+        {isUsername && (
+          <View style={styles.statusIcon}>
+            {isChecking ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : value && !error ? (
+              <Icon name="check" size={24} color="green" />
+            ) : value ? (
+              <Icon name="cancel" size={24} color="red" />
+            ) : null}
+          </View>
+        )}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };
@@ -77,6 +115,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
   },
+  inputWrapperError: {
+    borderColor: 'red',
+    borderWidth: 0.8,
+  },
   inputIcon: {
     marginRight: 10,
   },
@@ -85,6 +127,14 @@ const styles = StyleSheet.create({
     height: 50,
     fontSize: constants.fontSizes.medium,
     fontFamily: constants.fontFamilies.regular,
+  },
+  statusIcon: {
+    marginLeft: 10,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: constants.fontSizes.small,
+    marginTop: 4,
   },
 });
 
